@@ -402,6 +402,9 @@ geom_point(aes(x1, y, color="blue"), size=2, shape=21, fill='white') +
 geom_line(aes(x2, y, color="green"))+
 geom_point(aes(x2, y, color="green"), size=2, shape=21, fill='white') +
 scale_x_continuous(limits = c(1, 50)) +
+geom_polygon(data=data.frame(y=c(0.42,0.42,0.455,0.455), x=c(27.5,28.5,28.5,27.5)), aes(x=x, y=y), colour="black", fill=NA) +
+geom_polygon(data=data.frame(y=c(0.42,0.42,0.455,0.455), x=c(27.5,28.5,28.5,27.5)), aes(x=x, y=y), colour="black", fill=NA, linetype="dashed") +
+#geom_polygon(data=data.frame(y=c(0.244,0.244,0.314,0.314), x=c(11.5,12.5,12.5,11.5)), aes(x=x, y=y), colour="black", fill=NA) +
 theme_bw() +
 scale_color_discrete(name = element_blank(), labels=c("Lag = 5","Lag = 1","Lag = 0"))
 
