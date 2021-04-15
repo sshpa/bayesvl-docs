@@ -403,4 +403,6 @@ geom_line(aes(x2, y, color="green"))+
 geom_point(aes(x2, y, color="green"), size=2, shape=21, fill='white') +
 scale_x_continuous(limits = c(1, 50)) +
 theme_bw() +
+scale_color_discrete(name = element_blank(), labels=c("Lag = 5","Lag = 1","Lag = 0"))
+
 scale_color_manual(name = element_blank(), values=c("Lag=5"="blue","Lag=1"="green","Lag=0"="skyblue"))
