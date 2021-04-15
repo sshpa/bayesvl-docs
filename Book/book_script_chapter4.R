@@ -35,7 +35,41 @@ guide_legend(title="New Legend Title")
 
 ggplot() + geom_histogram(aes(rateChina, fill=1), alpha=0.25) + geom_histogram(aes(rateKorea, fill=2), alpha=0.25)
 
-dat[dat$Sex == 1,]
+
+	library(bayesvl)
+	dat <- data(STEM5000)
+	
+	dat <- data.frame(dat$Sex,dat$APS45)
+	names(dat) <- c("Sex", "APS45")
+	dat$SexLab <- ifelse(dat$Sex==1,'Male','Female')
+	dat$Sex <- dat$Sex-1
+	
+	male <- dat[dat$Sex == 1,]
+	female <- dat[dat$Sex == 2,]
+
+model <- bayesvl()
+model <- bvl_addNode(model, "y", "norm")
+model <- bvl_addNode(model, "x", "binom")
+
+model <- bvl_addArc(model, "x", "y", "slope")
+
+summary(model)
+
+stan_code <- bvl_model2Stan(model)
+cat(stan_code)
+
+model <- bvl_modelFit(model, data.frame(x=dat$Sex-1,y=dat$APS45), iter=5000 , warmup=2000 , chains=4 , cores=4)
+
+stan_diag(model@stanfit)
+bvl_plotTrace(model)
+
+mcmc = as.matrix(model@stanfit)
+group1_mean = mcmc[, "a_y"]
+group2_mean = mcmc[, "a_y"] + mcmc[, "b_x_y"]
+
+
+ggplot() + geom_density(aes(group1_mean, fill="blue"), alpha=0.25) + geom_density(aes(group2_mean, fill="red"), alpha=0.25) + 
+	scale_fill_discrete(labels = c("Male", "Female")) + theme(legend.title=element_blank())	+ labs(x = "probability")
 
 
 ggplot() + geom_histogram(aes(male$APS45), bins = 50) + theme_bw()
