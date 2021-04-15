@@ -367,3 +367,40 @@ options(mc.cores = parallel::detectCores())
 
 # Fit the model
 model <- bvl_modelFit(model, data1, warmup = 2000, iter = 5000, chains = 4, cores = 4)
+
+############ Chapter 6 ###############
+theta <- 0.5 # this is a fair coin
+Ntoss <- 50
+flips <- rbinom(n = Ntoss, size = 1, prob = theta)
+
+trialTheta = c()
+nHead = 0 # number of heads
+for (i in 1:Ntoss) {	                
+	# Cumulative number of heads at step i
+	nHead = nHead + flips[i]
+  # Compute the running proportion of heads	
+	trialTheta = c(trialTheta, nHead / i)
+	# Print proportion of heads	at step i
+	print(paste0("Theta after ", i, " trials is ", trialTheta[i]))
+}
+
+p1 <- ggplot(data=data.frame(x=1:Ntoss,y=trialTheta), aes(x=x, y=y, group=1)) +
+geom_line(color="skyblue")+
+geom_point(color="skyblue", size=2, shape=21, fill='white') +
+scale_x_continuous(limits = c(0, 50))
+
+p2 <- ggplot(data=data.frame(x=-4:45,y=trialTheta), aes(x=x, y=y, group=1)) +
+geom_line(color="skyblue")+
+geom_point(color="skyblue", size=2, shape=21, fill='white') +
+scale_x_continuous(limits = c(0, 50))
+
+ggplot(data=data.frame(x=1:50,x1=-3:46,x2=0:49,y=trialTheta)) +
+geom_line(aes(x, y, color="skyblue"))+
+geom_point(aes(x, y, color="skyblue"), size=2, shape=21, fill='white') +
+geom_line(aes(x1, y, color="blue"))+
+geom_point(aes(x1, y, color="blue"), size=2, shape=21, fill='white') +
+geom_line(aes(x2, y, color="green"))+
+geom_point(aes(x2, y, color="green"), size=2, shape=21, fill='white') +
+scale_x_continuous(limits = c(1, 50)) +
+theme_bw() +
+scale_color_manual(name = element_blank(), values=c("Lag=5"="blue","Lag=1"="green","Lag=0"="skyblue"))
