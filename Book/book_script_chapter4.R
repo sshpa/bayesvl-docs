@@ -67,9 +67,18 @@ mcmc = as.matrix(model@stanfit)
 group1_mean = mcmc[, "a_y"]
 group2_mean = mcmc[, "a_y"] + mcmc[, "b_x_y"]
 
+group_sigma = mcmc[, "sigma_y"]
+
+## Cohen's D
+cohenD = mcmc[, "b_x_y"] / group_sigma
+
+# Percentage change (relative to Group A)
+ES = 100 * mcmc[, "b_x_y"]/mcmc[, "a_y"]
+hist(ES)
+
 
 ggplot() + geom_density(aes(group1_mean, fill="blue"), alpha=0.25) + geom_density(aes(group2_mean, fill="red"), alpha=0.25) + 
-	scale_fill_discrete(labels = c("Male", "Female")) + theme(legend.title=element_blank())	+ labs(x = "probability")
+	scale_fill_discrete(labels = c("Male", "Female")) + theme(legend.title=element_blank())	+ labs(x = "")
 
 
 ggplot() + geom_histogram(aes(male$APS45), bins = 50) + theme_bw()
@@ -115,3 +124,37 @@ ES = 100 * mcmc[, "beta"]/mcmc[, "alpha"]
 # Probability that the effect is greater than 10% (a decline of >10%)
 sum(-1 * ES > 5)/length(ES)
 [1] 1
+
+
+############# ANOVA #######################
+	dat <- data.frame(as.factor(dat$Gradeid),dat$APS45)
+	names(dat) <- c("Grade", "APS45")
+  dat$is7 = ifelse(dat$Grade == 7, 1, 0)
+  dat$is8 = ifelse(dat$Grade == 8, 1, 0)
+  dat$is9 = ifelse(dat$Grade == 9, 1, 0)
+  
+boxplot(APS45 ~ Grade, dat)
+
+# Compute the analysis of variance
+res.aov <- aov(weight ~ group, data = my_data)
+# Summary of the analysis
+summary(res.aov)
+
+anova(lm(APS45 ~ Grade, dat))
+
+library(bayesplot)
+mcmc_combo(as.matrix(data.rstan), regex_pars = "beta|sigma")
+
+model <- bayesvl()
+model <- bvl_addNode(model, "y", "norm")
+model <- bvl_addNode(model, "x7", "binom")
+model <- bvl_addNode(model, "x8", "binom")
+model <- bvl_addNode(model, "x9", "binom")
+
+model <- bvl_addArc(model, "x7", "y", "slope")
+model <- bvl_addArc(model, "x8", "y", "slope")
+model <- bvl_addArc(model, "x9", "y", "slope")
+
+summary(model)
+stan_code <- bvl_model2Stan(model)
+cat(stan_code)
