@@ -258,9 +258,9 @@ costKorea <- 40 + posterior$rateKorea * 1500
 hist(costChina)
 hist(costKorea)
 
-hist(profitA - profitB)
-expected_profit_diff <- mean(profitA - profitB)
-abline(v = expected_profit_diff, col = "red", lwd =2)
+hist(costChina - costKorea)
+est_cost_diff <- mean(costChina - costKorea)
+abline(v = est_cost_diff, col = "red", lwd =2)
 
 
 
@@ -403,6 +403,220 @@ model <- bvl_modelFit(model, data1, warmup = 2000, iter = 5000, chains = 4, core
 posterior <- as.data.frame(stan_samples)
 sum(posterior$edumot > 0) / length(posterior$edumot)
 sum(posterior$edufat > 0) / length(posterior$edufat)
+
+
+## Complete-pooling Sample Model
+pooled_model = "data {
+  int<lower=0> N; 
+  vector[N] x;
+  vector[N] y;
+} 
+parameters {
+  real alpha;
+  real beta;
+  real<lower=0,upper=100> sigma;
+} 
+model {
+  y ~ normal(alpha + beta * x, sigma);
+}"
+
+data_list <- list(N = nrow(STEM5000), school = as.numeric(as.factor(STEM5000$School)), x = STEM5000$TimeSci, y = STEM5000$APS45)
+poolSample <- stan(model_code = pooled_model, data = data_list)
+
+## Non-pooling Sample Model
+unpooled_model = "data {
+  int<lower=0> N; 
+  int<lower=1,upper=16> school[N];
+  vector[N] x;
+  vector[N] y;
+} 
+parameters {
+  vector[16] alpha;
+  real beta;
+  real<lower=0,upper=100> sigma;
+} 
+transformed parameters {
+  vector[N] y_hat;
+
+  for (i in 1:N)
+    y_hat[i] <- beta * x[i] + alpha[school[i]];
+}
+model {
+  y ~ normal(y_hat, sigma);
+}"
+
+data_list <- list(N = nrow(STEM5000), school = as.numeric(as.factor(STEM5000$School)), x = STEM5000$TimeSci, y = STEM5000$APS45)
+unpoolSample <- stan(model_code = unpooled_model, data = data_list)
+
+
+
+
+fit_ss <- extract(unpoolSample, permuted = TRUE) # fit_ss is a list 
+
+school_names = c()
+school_mean = c()
+school_sd = c()
+school_min = c()
+school_max = c()
+school_20 = c()
+school_80 = c()
+for(schoolid in 1:16)
+{
+	#print(schoolid)
+	school_mean = c(school_mean, mean(fit_ss$alpha[,schoolid]))
+	school_sd = c(school_sd, sd(fit_ss$alpha[,schoolid]))
+	
+	a_quant = quantile(fit_ss$alpha[,schoolid],c(0.025, 0.2, 0.50, 0.8, 0.975))
+	a_quant <- data.frame(t(a_quant))
+	names(a_quant) <- c("Q5",  "Q20", "Q50", "Q80", "Q95")
+	
+	school_min = c(school_min, a_quant$Q5)
+	school_max = c(school_max, a_quant$Q95)
+	school_20 = c(school_20, a_quant$Q20)
+	school_80 = c(school_80, a_quant$Q80)
+	
+	school_names = c(school_names, schoolid)
+}  
+a_df <- data.frame(school_mean, school_max, school_min, school_20, school_80, school_sd, school_names)
+#round(head(a_df), 2)
+
+a_df <- a_df[order(a_df$school_mean), ]
+a_df$school_rank <- c(1 : dim(a_df)[1])
+
+ggplot(data = a_df, 
+       aes(x = school_names, 
+           y = school_mean)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_linerange(aes(ymin=school_20,ymax=school_80),size=2) +
+  geom_pointrange(aes(ymin = school_min, 
+                      ymax = school_max)) + 
+  geom_hline(yintercept = mean(a_df$school_mean), 
+             size = 0.5, 
+             col = "red") +
+  ylab("alpha") +
+  xlab("school") +
+  scale_x_discrete(limits=a_df$school_names) +
+  theme_bw()
+
+
+
+
+## Partial-pooling Sample Model
+partial_pooling = "
+data {
+  int<lower=0> N; 
+  int<lower=1,upper=16> school[N];
+  vector[N] x;
+  vector[N] y;
+} 
+parameters {
+  vector[16] alpha;
+  real beta;
+  real mu_a;
+  real<lower=0,upper=100> sigma_a;
+  real<lower=0,upper=100> sigma_y;
+} 
+transformed parameters {
+  vector[N] y_hat;
+  for (i in 1:N)
+    y_hat[i] <- beta * x[i] + alpha[school[i]];
+}
+model {
+  mu_a ~ normal(0, 1);
+  alpha ~ normal (10 * mu_a, sigma_a);
+
+  y ~ normal(y_hat, sigma_y);
+}"
+
+
+## Partial-pooling Sample Model
+partial_pooling = "
+data {
+  int<lower=0> N; 
+  int<lower=1,upper=16> school[N];
+  vector[N] x;
+  vector[N] y;
+} 
+parameters {
+  real beta;
+
+  real mu0;
+  real<lower=0> sigma0;
+
+  real u_alpha[16];
+  real<lower=0> sigma_u;
+  
+  real<lower=0,upper=100> sigma_a;
+  real<lower=0,upper=100> sigma_y;
+} 
+transformed parameters {
+  vector[16] alpha;
+  vector[N] y_hat;
+  for (k in 1:16)
+		alpha[k] = mu0 + u_alpha[k];
+		
+  for (i in 1:N)
+    y_hat[i] <- beta * x[i] + alpha[school[i]];
+}
+model {
+  mu0 ~ normal(0, sigma0);
+  u_alpha  ~ normal(0, sigma_u);
+  
+  y ~ normal(y_hat, sigma_y);
+}"
+
+data_list <- list(N = nrow(STEM5000), school = as.numeric(as.factor(STEM5000$School)), x = STEM5000$TimeSci, y = STEM5000$APS45)
+partialSample <- stan(model_code = partial_pooling, data = data_list)
+
+
+
+fit_ss <- extract(partialSample, permuted = TRUE) # fit_ss is a list 
+
+school_names = c()
+school_mean = c()
+school_sd = c()
+school_min = c()
+school_max = c()
+school_20 = c()
+school_80 = c()
+for(schoolid in 1:16)
+{
+	#print(schoolid)
+	school_mean = c(school_mean, mean(fit_ss$alpha[,schoolid]))
+	school_sd = c(school_sd, sd(fit_ss$alpha[,schoolid]))
+	
+	a_quant = quantile(fit_ss$alpha[,schoolid],c(0.025, 0.2, 0.50, 0.8, 0.975))
+	a_quant <- data.frame(t(a_quant))
+	names(a_quant) <- c("Q5",  "Q20", "Q50", "Q80", "Q95")
+	
+	school_min = c(school_min, a_quant$Q5)
+	school_max = c(school_max, a_quant$Q95)
+	school_20 = c(school_20, a_quant$Q20)
+	school_80 = c(school_80, a_quant$Q80)
+	
+	school_names = c(school_names, schoolid)
+}  
+a_df <- data.frame(school_mean, school_max, school_min, school_20, school_80, school_sd, school_names)
+#round(head(a_df), 2)
+
+a_df <- a_df[order(a_df$school_mean), ]
+a_df$school_rank <- c(1 : dim(a_df)[1])
+
+ggplot(data = a_df, 
+       aes(x = school_names, 
+           y = school_mean)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  geom_linerange(aes(ymin=school_20,ymax=school_80),size=2) +
+  geom_pointrange(aes(ymin = school_min, 
+                      ymax = school_max)) + 
+  geom_hline(yintercept = mean(a_df$school_mean), 
+             size = 0.5, 
+             col = "red") +
+  ylab("alpha") +
+  xlab("school") +
+  scale_x_discrete(limits=a_df$school_names) +
+  theme_bw()
+
 
 
 ############ Chapter 6 ###############
