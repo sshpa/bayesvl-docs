@@ -179,7 +179,7 @@ bayesplot::mcmc_areas(
 )
 
 
-###############################
+############################### Chapter 5 - A/B Test
 library(rstan)
 
 # The Stan model as a string.
@@ -233,6 +233,19 @@ bayesplot::mcmc_areas(
   prob_outer = 0.99, # 99%
   point_est = "mean"
 )
+
+
+library(tidyverse)
+library(HDInterval)
+library(ggridges)
+
+#mcmc = as.matrix(stan_samples)
+
+## plot density curve with qplot and mark 95% hdi
+ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile))) + 
+  geom_density_ridges_gradient(quantile_lines = TRUE, quantile_fun = hdi, vline_linetype = 2) +
+  scale_fill_manual(values = c("transparent", "lightblue", "transparent"), guide = "none") +
+  theme_bw()
 
 
 ############## Linear
@@ -312,7 +325,7 @@ ggplot(data = cars,
 	geom_vline(xintercept = 0) +
 	geom_hline(yintercept = 0)
 	
-#########
+######### Chapter 5
 stem <- read.csv(file="/Users/Shared/Previously Relocated Items/Security/Statistics/STEM/STEM_model1.csv",header=T)
 
 cols <- c("aps45", "timesci", "sex", "gradeid", "school")
@@ -352,6 +365,9 @@ model <- bayesvl()
 model <- bvl_addNode(model, "infectedChina", "binorm")
 model <- bvl_addNode(model, "infectedKorea", "binorm")
 
+
+
+############### DKAP - Chapter 9
 model <- bvl_addArc(model, "sex",  "ict", "slope")
 model <- bvl_addArc(model, "ecostt",  "ict", "slope")
 model <- bvl_addArc(model, "edumot",  "ict", "slope")
@@ -367,6 +383,11 @@ options(mc.cores = parallel::detectCores())
 
 # Fit the model
 model <- bvl_modelFit(model, data1, warmup = 2000, iter = 5000, chains = 4, cores = 4)
+
+posterior <- as.data.frame(stan_samples)
+sum(posterior$edumot > 0) / length(posterior$edumot)
+sum(posterior$edufat > 0) / length(posterior$edufat)
+
 
 ############ Chapter 6 ###############
 theta <- 0.5 # this is a fair coin
@@ -403,9 +424,12 @@ geom_line(aes(x2, y, color="green"))+
 geom_point(aes(x2, y, color="green"), size=2, shape=21, fill='white') +
 scale_x_continuous(limits = c(1, 50)) +
 geom_polygon(data=data.frame(y=c(0.42,0.42,0.455,0.455), x=c(27.5,28.5,28.5,27.5)), aes(x=x, y=y), colour="black", fill=NA) +
-geom_polygon(data=data.frame(y=c(0.42,0.42,0.455,0.455), x=c(27.5,28.5,28.5,27.5)), aes(x=x, y=y), colour="black", fill=NA, linetype="dashed") +
-#geom_polygon(data=data.frame(y=c(0.244,0.244,0.314,0.314), x=c(11.5,12.5,12.5,11.5)), aes(x=x, y=y), colour="black", fill=NA) +
+geom_polygon(data=data.frame(y=c(0.44,0.44,0.51,0.51), x=c(27.43,28.57,28.57,27.43)), aes(x=x, y=y), colour="blue", fill=NA, linetype="dashed") +
+#geom_polygon(data=data.frame(y=c(0.244,0.244,0.314,0.314), x=c(11.4,12.5,12.5,11.5)), aes(x=x, y=y), colour="black", fill=NA) +
 theme_bw() +
 scale_color_discrete(name = element_blank(), labels=c("Lag = 5","Lag = 1","Lag = 0"))
 
 scale_color_manual(name = element_blank(), values=c("Lag=5"="blue","Lag=1"="green","Lag=0"="skyblue"))
+
+coda::gelman.plot( codaObject[,params] , main="" , auto.layout=TRUE , 
+                       col=DBDAplColors )
