@@ -248,6 +248,22 @@ ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile))) +
   theme_bw()
 
 
+# calculating the estimated posterior costs:
+# China cost of 200 (transprtation) + 1200 (the cost per treament) add
+# Korea cost of 40 (transprtation) + 1500 (the cost per treament) add
+
+costChina <- 200 + posterior$rateChina * 1200 
+costKorea <- 40 + posterior$rateKorea * 1500 
+
+hist(costChina)
+hist(costKorea)
+
+hist(profitA - profitB)
+expected_profit_diff <- mean(profitA - profitB)
+abline(v = expected_profit_diff, col = "red", lwd =2)
+
+
+
 ############## Linear
 data <- mtcars
 fit <- lm(mpg ~ hp, data = data)
@@ -433,3 +449,4 @@ scale_color_manual(name = element_blank(), values=c("Lag=5"="blue","Lag=1"="gree
 
 coda::gelman.plot( codaObject[,params] , main="" , auto.layout=TRUE , 
                        col=DBDAplColors )
+                       
