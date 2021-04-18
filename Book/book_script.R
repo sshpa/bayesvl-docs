@@ -541,7 +541,7 @@ parameters {
   real beta;
 
   real mu0;
-  real<lower=0> sigma0;
+  //real<lower=0> sigma0;
 
   real u_alpha[16];
   real<lower=0> sigma_u;
@@ -556,10 +556,10 @@ transformed parameters {
 		alpha[k] = mu0 + u_alpha[k];
 		
   for (i in 1:N)
-    y_hat[i] <- beta * x[i] + alpha[school[i]];
+    y_hat[i] = beta * x[i] + alpha[school[i]];
 }
 model {
-  mu0 ~ normal(0, sigma0);
+  mu0 ~ normal(0, 10);
   u_alpha  ~ normal(0, sigma_u);
   
   y ~ normal(y_hat, sigma_y);
@@ -619,6 +619,10 @@ ggplot(data = a_df,
 
 
 
+
+data_list <- list(Nobs = nrow(stem), APS45ID = as.numeric(stem$APS45ID), NTimeSci = 3, TimeSci = as.numeric(stem$TimeSci), NGradeid = 4, Gradeid = as.numeric(stem$Gradeid))
+stemSample <- stan(model_code = model_string, data = data_list)
+
 ############ Chapter 6 ###############
 theta <- 0.5 # this is a fair coin
 Ntoss <- 50
@@ -663,4 +667,6 @@ scale_color_manual(name = element_blank(), values=c("Lag=5"="blue","Lag=1"="gree
 
 coda::gelman.plot( codaObject[,params] , main="" , auto.layout=TRUE , 
                        col=DBDAplColors )
-                       
+
+autocorr.diag (stan2coda(stan_samples), c(0, 1, 5, 10, 50))
+
