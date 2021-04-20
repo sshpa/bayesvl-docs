@@ -306,7 +306,7 @@ ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile))) +
 
 a_quant = quantile(posterior$rate_diff,c(0.025, 0.50, 0.975))
 	
-## plot density curve with qplot and mark 95% hdi
+## plot density curve with qplot and mark 97.5% hdi
 ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile, quantiles=c(0.05, 0.50, 0.95)), size = 1)) + 
   geom_density_ridges_gradient(quantile_lines = TRUE, quantile_fun = hdi, vline_linetype = 2, size = 1) +
   scale_fill_manual(values = c("transparent", "lightblue", "transparent"), guide = "none") +
@@ -317,6 +317,9 @@ ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile, quantiles=c(0.
   #scale_x_continuous(breaks = seq(0.2, 0.8, by = 0.1)) +
   theme_bw()
 
+par(lwd=2)
+hist(rateChina, lwd=2)
+hist(rateKorea, lwd=2)
 
 # calculating the estimated posterior costs:
 # China cost of 200 (transprtation) + 1200 (the cost per treament) add

@@ -18,7 +18,7 @@ ggplot() + geom_histogram(aes(rateChina), bins = 5)
 
 ggplot() + geom_histogram(aes(rateChina), bins = 50) + geom_density(aes(rateChina))
 
-ggplot() + geom_density(aes(rateChina, fill="blue"), alpha=0.25) + geom_density(aes(rateKorea, fill="red"), alpha=0.25) + 
+ggplot() + geom_density(aes(rateChina, fill="blue"), alpha=0.25, size=1) + geom_density(aes(rateKorea, fill="red"), alpha=0.25, size=1) + 
 	scale_fill_discrete(labels = c("China", "Korea")) + theme(legend.title=element_blank())	+ labs(x = "probability")
 
 
