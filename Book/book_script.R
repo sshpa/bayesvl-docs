@@ -117,7 +117,7 @@ print(count)
 
 x <- seq(from = 0, to = 1, by = 0.01)
 prior <- dnorm(x, mean = 0.5, sd = 0.5)
-plot(x, prior, xlab=expression(theta), ylab=expression(paste("P(", theta, ")")), type = "l", col = "red", xaxt="none")
+plot(x, prior, xlab=expression(theta), ylab=expression(paste("P(", theta, ")")), type = "l", col = "red", xaxt="none", lwd=3)
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
@@ -125,11 +125,11 @@ plot(p, dbeta(p, 900, 100), ylab="density", type ="l", col=4, xaxt="none")
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
-plot(p, dbeta(p, 1, 1), xlab=expression(theta), ylab=expression(paste("P(", theta, ")")), type ="l", col="red", xaxt="none")
+plot(p, dbeta(p, 1, 1), xlab=expression(theta), ylab=expression(paste("P(", theta, ")")), type ="l", col="red", xaxt="none", lwd=3)
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
-plot(p, dbeta(p, 6, 5), xlab=expression(theta), ylab=expression(paste("P(D | ", theta, ")")), type ="l", col="blue", xaxt="none")
+plot(p, dbeta(p, 6, 5), xlab=expression(theta), ylab=expression(paste("P(D | ", theta, ")")), type ="l", col="blue", xaxt="none", lwd=3)
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
