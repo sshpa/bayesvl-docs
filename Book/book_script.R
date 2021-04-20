@@ -94,7 +94,7 @@ postscript("Fig2.3.eps",width=9.5,height=6.5)
 
 plot(theta, likelihood, xlab=expression(theta), ylab=expression(paste("P(D | ", theta, ")")), type ="l", col="blue", xaxt="none", yaxt="none", lwd=3)
 axis(side=1, at=seq(0,1,by=0.1))
-abline( v=maxLikelihoodTheta, lty="dotted" )
+abline( v=maxLikelihoodTheta, lty="dotted", lwd=3)
 
 dev.off()
 
