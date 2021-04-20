@@ -133,17 +133,17 @@ plot(p, dbeta(p, 6, 5), xlab=expression(theta), ylab=expression(paste("P(D | ", 
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
-plot(p, dbeta(p, 4.5, 6), xlab=expression(theta), ylab=expression(paste("P(", theta, " | D)")), type ="l", col="green", xaxt="none")
+plot(p, dbeta(p, 4.5, 6), xlab=expression(theta), ylab=expression(paste("P(", theta, " | D)")), type ="l", col="green", xaxt="none", lwd=3)
 axis(side=1, at=seq(0,1,by=0.1))
 
 p = seq(0,1, length=100)
 prior = dbeta(p, 1, 1)
 likelihood = dbeta(p, 6, 5)
 posterior = dbeta(p, 6, 5.5)
-plot(p, posterior, type = "l", col = "green", ylab="", xlab=expression(theta))
-lines(p, likelihood , type = "l", col = "blue")
-lines(p, prior, type = "l", col = "red")
-legend(0.8,2.5, c("prior", "likelihood", "posterior"),lty=c(1,1,1),col=c(2,1,3))
+plot(p, posterior, type = "l", col = "green", ylab="", xlab=expression(theta), lwd=3)
+lines(p, likelihood , type = "l", col = "blue", lwd=3)
+lines(p, prior, type = "l", col = "red", lwd=3)
+legend(0.8,2.5, c("prior", "likelihood", "posterior"),lty=c(1,1,1),lwd=c(3,3,3),col=c(2,1,3))
 
 p = seq(0,1, length=100)
 prior = dbeta(p, 5, 5)
@@ -186,13 +186,34 @@ data <- list(N=N, y=data_list)
 # Compiling and producing posterior samples from the model.
 stan_samples <- stan(model_code = model_string, data = data, warmup=2000, iter = 10000)
 
+# Export the samples to a data.frame for easier handling.
+posterior <- as.data.frame(stan_samples)
+
+library(tidyverse)
+library(HDInterval)
+library(ggridges)
+
+#mcmc = as.matrix(stan_samples)
+
+## plot density curve with qplot and mark 95% hdi
+ggplot(posterior, aes(x = theta, y = 0, fill = stat(quantile), size = 1)) + 
+  geom_density_ridges_gradient(quantile_lines = TRUE, quantile_fun = hdi, vline_linetype = 2, size = 1) +
+  scale_fill_manual(values = c("transparent", "lightblue", "transparent"), guide = "none") +
+  annotate(geom="segment", x = 0.344, xend = 0.747, y = 0, yend = 0, colour = "black", size=1) +
+  annotate(geom="label", x=0.344, y=0.2, label="0.344", color="black", fill = "white") +
+  annotate(geom="label", x=0.747, y=0.2, label="0.747", color="black", fill = "white") +
+  annotate(geom="text", x=0.55, y=0.3, label="95% HPDI", color="black", size=6) +
+  #geom_label(aes(x = 0.344, y = 0.5, label = "3.44"), fill = "white") +
+  scale_x_continuous(breaks = seq(0.2, 0.8, by = 0.1)) +
+  xlab("theta") +
+  theme_bw()
+
+
+
 # Plotting and summarizing the posterior distribution
 stan_samples
 traceplot(stan_samples)
 plot(stan_samples)
-
-# Export the samples to a data.frame for easier handling.
-posterior <- as.data.frame(stan_samples)
 
 # Extract parameter theta to plot
 theta_draw <- extract(stan_samples)$theta
