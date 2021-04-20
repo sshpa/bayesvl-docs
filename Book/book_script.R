@@ -304,6 +304,20 @@ ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile))) +
   theme_bw()
 
 
+a_quant = quantile(posterior$rate_diff,c(0.025, 0.50, 0.975))
+	
+## plot density curve with qplot and mark 95% hdi
+ggplot(posterior, aes(x = rate_diff, y = 0, fill = stat(quantile, quantiles=c(0.05, 0.50, 0.95)), size = 1)) + 
+  geom_density_ridges_gradient(quantile_lines = TRUE, quantile_fun = hdi, vline_linetype = 2, size = 1) +
+  scale_fill_manual(values = c("transparent", "lightblue", "transparent"), guide = "none") +
+  annotate(geom="segment", x = a_quant[1], xend = a_quant[3], y = 0, yend = 0, colour = "black", size=1) +
+  annotate(geom="label", x=a_quant[1], y=0.1, label=round(a_quant[1],3), color="black", fill = "white") +
+  annotate(geom="label", x=a_quant[3], y=0.1, label=round(a_quant[3],3), color="black", fill = "white") +
+  annotate(geom="text", x=a_quant[2], y=1, label="97.5% HPDI", color="black", size=6) +
+  #scale_x_continuous(breaks = seq(0.2, 0.8, by = 0.1)) +
+  theme_bw()
+
+
 # calculating the estimated posterior costs:
 # China cost of 200 (transprtation) + 1200 (the cost per treament) add
 # Korea cost of 40 (transprtation) + 1500 (the cost per treament) add
@@ -438,6 +452,35 @@ model <- bvl_addNode(model, "infectedChina", "binorm")
 model <- bvl_addNode(model, "infectedKorea", "binorm")
 
 
+
+data1 <- read.csv("/Users/Shared/Previously Relocated Items/Security/Statistics/network/bayesvl-docs/Book/Data_full.csv")
+
+	#Variables selection
+	data1$Suicide <- data1$Suicide.Ideation
+	data1$TCC <- data1$Connectedness.Companionship
+	
+	keeps <- c("Suicide","Religion","TCC")
+	data1 <- data1[keeps]
+	data1<-na.omit(data1)
+	
+	#Model Design
+	model<-bayesvl()
+	model<-bvl_addNode(model,"Suicide","binom") 
+	model<-bvl_addNode(model,"Religion","cat")
+	model<-bvl_addNode(model,"TCC","norm")
+	model<-bvl_addNode(model,"Religion_TCC","trans")
+	model<-bvl_addArc(model,"Religion","Religion_TCC","*")
+	model<-bvl_addArc(model,"TCC","Religion_TCC","*")
+	model<-bvl_addArc(model,"Religion","Suicide","slope")
+	model<-bvl_addArc(model,"Religion_TCC","Suicide","slope")
+	
+	#Generating and checking Stan code
+	model_string <- bvl_model2Stan(model)
+	cat(model_string) 
+	
+	#Model fitting
+	model<-bvl_modelFit(model, data1, warmup = 2000, iter = 5000, chains = 4,cores = 4)
+	
 
 ############### DKAP - Chapter 9
 model <- bvl_addArc(model, "sex",  "ict", "slope")
