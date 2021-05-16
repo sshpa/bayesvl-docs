@@ -37,22 +37,21 @@ ggplot() + geom_histogram(aes(rateChina, fill=1), alpha=0.25) + geom_histogram(a
 
 
 	library(bayesvl)
-	dat <- data(STEM5000)
+	data("STEM5000")
+	dat <- STEM5000
 	
 	dat <- data.frame(dat$Sex,dat$APS45)
 	names(dat) <- c("Sex", "APS45")
 	dat$SexLab <- ifelse(dat$Sex==1,'Male','Female')
-	dat$Sex <- dat$Sex-1
 	
 	male <- dat[dat$Sex == 1,]
 	female <- dat[dat$Sex == 2,]
 
 model <- bayesvl()
-model <- bvl_addNode(model, "y", "norm")
-model <- bvl_addNode(model, "x", "binom")
+model <- bvl_addNode(model, "y", "norm")  #APS45
+model <- bvl_addNode(model, "x", "binom") #Sex
 
 model <- bvl_addArc(model, "x", "y", "slope")
-
 summary(model)
 
 stan_code <- bvl_model2Stan(model)
@@ -63,14 +62,19 @@ model <- bvl_modelFit(model, data.frame(x=dat$Sex-1,y=dat$APS45), iter=5000 , wa
 stan_diag(model@stanfit)
 bvl_plotTrace(model)
 
-mcmc = as.matrix(model@stanfit)
-group1_mean = mcmc[, "a_y"]
-group2_mean = mcmc[, "a_y"] + mcmc[, "b_x_y"]
+posterior = as.matrix(model@stanfit)
+group1_mean = posterior[, "a_y"]
+group2_mean = posterior[, "a_y"] + posterior[, "b_x_y"]
 
-group_sigma = mcmc[, "sigma_y"]
+group_sigma = posterior[, "sigma_y"]
+
+print(paste0("Mean of group 1: ", mean(group1_mean)))
+print(paste0("Mean of group 2: ", mean(group2_mean)))
 
 ## Cohen's D
-cohenD = mcmc[, "b_x_y"] / group_sigma
+cohenD = posterior[, "b_x_y"] / group_sigma
+
+print(paste0("Cohen's D: ", mean(cohenD)))
 
 # Percentage change (relative to Group A)
 ES = 100 * mcmc[, "b_x_y"]/mcmc[, "a_y"]
@@ -158,3 +162,59 @@ model <- bvl_addArc(model, "x9", "y", "slope")
 summary(model)
 stan_code <- bvl_model2Stan(model)
 cat(stan_code)
+
+
+
+
+# The Stan model as a string.
+model_string <- "
+// Here we define the data to pass into the model
+	data {
+		int n; // Number of trials
+		vector [n] y;  // APS45
+		vector [n] x;  // Gender
+	}
+
+// Here we define what 'unknowns' aka parameters
+	parameters {
+		real <lower=0, upper=10> sigma;
+		real alpha;
+		real beta;
+	}
+	transformed parameters {
+	}
+	model {
+		vector [n] mu;
+		
+		//Priors
+		alpha ~ normal(0,100);
+		beta ~ normal(0,100);
+		sigma ~ cauchy(0,10);
+		
+		mu = alpha + beta*x;
+		
+		//Likelihood
+		y ~ normal(mu, sigma);
+	}
+
+// The generative model
+	generated quantities {
+		vector [2] Group_means;
+		real CohensD;
+		//Other Derived parameters 
+		//# Group means (note, alpha / beta is a vector)
+		Group_means[1] = alpha;
+		Group_means[2] = alpha + beta;
+		
+		// Calculate Cohens' D
+		CohensD = beta / sigma;  
+	}
+"
+
+data.list <- with(dat, list(y = APS45, x = (Sex - 1), n = nrow(dat)))
+
+library(rstan)
+fit = stan(model_code = model_string, data = data.list, iter = 2000,
+warmup = 100, chains = 4, thin = 10, refresh = 0)
+
+print(fit)

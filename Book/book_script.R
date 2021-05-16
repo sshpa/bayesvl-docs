@@ -328,10 +328,12 @@ hist(rateKorea, lwd=2)
 costChina <- 200 + posterior$rateChina * 1200 
 costKorea <- 40 + posterior$rateKorea * 1500 
 
-hist(costChina)
-hist(costKorea)
+par(lwd=2)
+hist(costChina, lwd=2)
+hist(costKorea, lwd=2)
 
-hist(costChina - costKorea)
+par(lwd=2)
+hist(costChina - costKorea, lwd=2)
 est_cost_diff <- mean(costChina - costKorea)
 abline(v = est_cost_diff, col = "red", lwd =2)
 
@@ -455,7 +457,7 @@ model <- bvl_addNode(model, "infectedChina", "binorm")
 model <- bvl_addNode(model, "infectedKorea", "binorm")
 
 
-
+##### Bai toan cua HOANG
 data1 <- read.csv("/Users/Shared/Previously Relocated Items/Security/Statistics/network/bayesvl-docs/Book/Data_full.csv")
 
 	#Variables selection
@@ -469,7 +471,7 @@ data1 <- read.csv("/Users/Shared/Previously Relocated Items/Security/Statistics/
 	#Model Design
 	model<-bayesvl()
 	model<-bvl_addNode(model,"Suicide","binom") 
-	model<-bvl_addNode(model,"Religion","cat")
+	model<-bvl_addNode(model,"Religion","binom")
 	model<-bvl_addNode(model,"TCC","norm")
 	model<-bvl_addNode(model,"Religion_TCC","trans")
 	model<-bvl_addArc(model,"Religion","Religion_TCC","*")
@@ -484,6 +486,93 @@ data1 <- read.csv("/Users/Shared/Previously Relocated Items/Security/Statistics/
 	#Model fitting
 	model<-bvl_modelFit(model, data1, warmup = 2000, iter = 5000, chains = 4,cores = 4)
 	
+	densMode <- function(x){
+    td <- density(x)
+    maxDens <- which.max(td$y)
+    list(x=td$x[maxDens], y=td$y[maxDens])
+	}
+	
+	posterior = as.matrix(model@stanfit)
+	
+	#Religion = 1
+	Suicide1_1 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 1)
+  Suicide1_2 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 2)
+  Suicide1_3 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 3)
+  Suicide1_4 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 4)
+  Suicide1_5 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 5)
+  Suicide1_6 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 6)
+  
+  ggplot() + 
+  geom_density(aes(Suicide1_1, fill=1), alpha=0.25, size=1) + 
+  geom_vline(xintercept = densMode(Suicide1_1)$x) +
+  geom_density(aes(Suicide1_2, fill=2), alpha=0.25, size=1) + 
+  geom_vline(xintercept = densMode(Suicide1_2)$x) +
+  geom_density(aes(Suicide1_3, fill=3), alpha=0.25, size=1) + 
+  geom_vline(xintercept = densMode(Suicide1_3)$x) +
+  geom_density(aes(Suicide1_4, fill=4), alpha=0.25, size=1) + 
+  geom_vline(xintercept = densMode(Suicide1_4)$x) +
+  geom_density(aes(Suicide1_5, fill=5), alpha=0.25, size=1) + 
+  geom_vline(xintercept = densMode(Suicide1_5)$x) +
+  geom_density(aes(Suicide1_6, fill=6), alpha=0.25, size=1) + 
+  #geom_vline(xintercept = densMode(Suicide1_6)$x) +
+  annotate(geom="segment", x = densMode(Suicide1_6)$x, xend = densMode(Suicide1_6)$x, y = 0, yend = densMode(Suicide1_6)$y, colour = "black", linetype="dashed") +
+  annotate(geom="label", x=densMode(Suicide1_6)$x, y=0.2, label=round(densMode(Suicide1_6)$x,2), color="black", fill = "white") +
+	#scale_fill_discrete(labels = c("TCC=1", "TCC=2", "TCC=3", "TCC=4", "TCC=5", "TCC=6")) + 
+	labs(fill="TCC")	+ labs(x = "probability of suicide")
+
+
+  ggplot() + 
+  geom_density(aes(Suicide1_1, fill=1), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_1)$x, xend = densMode(Suicide1_1)$x, y = 0, yend = densMode(Suicide1_1)$y, colour = "black", linetype="dashed") +
+  geom_density(aes(Suicide1_2, fill=2), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_2)$x, xend = densMode(Suicide1_2)$x, y = 0, yend = densMode(Suicide1_2)$y, colour = "black", linetype="dashed") +
+  geom_density(aes(Suicide1_3, fill=3), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_3)$x, xend = densMode(Suicide1_3)$x, y = 0, yend = densMode(Suicide1_3)$y, colour = "black", linetype="dashed") +
+  geom_density(aes(Suicide1_4, fill=4), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_4)$x, xend = densMode(Suicide1_4)$x, y = 0, yend = densMode(Suicide1_4)$y, colour = "black", linetype="dashed") +
+  geom_density(aes(Suicide1_5, fill=5), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_5)$x, xend = densMode(Suicide1_5)$x, y = 0, yend = densMode(Suicide1_5)$y, colour = "black", linetype="dashed") +
+  geom_density(aes(Suicide1_6, fill=6), alpha=0.25, size=1) + 
+  annotate(geom="segment", x = densMode(Suicide1_6)$x, xend = densMode(Suicide1_6)$x, y = 0, yend = densMode(Suicide1_6)$y, colour = "black", linetype="dashed") +
+  annotate(geom="label", x=densMode(Suicide1_1)$x, y=0.2, label=round(densMode(Suicide1_1)$x,2), color="black", fill = "white") +
+  annotate(geom="label", x=densMode(Suicide1_2)$x, y=0.2, label=round(densMode(Suicide1_2)$x,2), color="black", fill = "white") +
+  annotate(geom="label", x=densMode(Suicide1_3)$x, y=0.2, label=round(densMode(Suicide1_3)$x,2), color="black", fill = "white") +
+  annotate(geom="label", x=densMode(Suicide1_4)$x, y=0.2, label=round(densMode(Suicide1_4)$x,2), color="black", fill = "white") +
+  annotate(geom="label", x=densMode(Suicide1_5)$x, y=0.2, label=round(densMode(Suicide1_5)$x,2), color="black", fill = "white") +
+  annotate(geom="label", x=densMode(Suicide1_6)$x, y=0.2, label=round(densMode(Suicide1_6)$x,2), color="black", fill = "white") +
+	labs(fill="TCC")	+ labs(x = "probability of suicide")
+
+
+
+  #Religion = 0
+  Suicide0_1 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 1)
+  Suicide0_2 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 2)
+  Suicide0_3 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 3)
+  Suicide0_4 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 4)
+  Suicide0_5 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 5)
+  Suicide0_6 = invlogit(posterior[, "a_Suicide"] + posterior[, "b_Religion_Suicide"] * 1 + posterior[, "b_Religion_TCC_Suicide"] * 1 * 6)
+
+	
+	test_script = "
+	for (i in 1:Nobs) {
+        yrep_TCC_1[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 1));
+     }
+     for (i in 1:Nobs) {
+        yrep_TCC_2[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 2));
+     }
+     for (i in 1:Nobs) {
+        yrep_TCC_3[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 3));
+     }
+     for (i in 1:Nobs) {
+        yrep_TCC_4[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 4));
+     }
+     for (i in 1:Nobs) {
+        yrep_TCC_5[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 5));
+     }
+     for (i in 1:Nobs) {
+        yrep_TCC_6[i] = binomial_rng(Suicide[i], inv_logit(a_Suicide + b_Religion_Suicide * Religion[i] + b_Religion_TCC_Suicide * Religion[i] * 6));
+     }
+   "
 
 ############### DKAP - Chapter 9
 model <- bvl_addArc(model, "sex",  "ict", "slope")
